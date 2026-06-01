@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Auto-Loading Topo Viewer with GPS</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: sans-serif; }
+        #map { height: 100vh; width: 100vw; z-index: 1; }
+        #ui-container {
+            position: absolute; top: 10px; left: 50px; z-index: 1000;
+            background: rgba(255, 255, 255, 0.95); padding: 15px;
+            border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #status { font-weight: bold; color: #2980b9; font-size: 0.9em; }
+        
+        /* Modern Button Styling */
+        .gps-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s ease;
+        }
+        .gps-btn:hover { background-color: #27ae60; }
+        .gps-btn:active { background-color: #1e8449; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <div><strong>Local Map Catalog</strong></div>
+        <div id="status">Connecting to folder...</div>
+        <button class="gps-btn" id="gpsBtn" onclick="toggleGPS()">📍 Find My Location</button>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let currentOverlay = null;
+        let coverageLayer = L.featureGroup().addTo(map);
+        
+        // GPS Global Variables
+        let watchId = null;
+        let userMarker = null;
+        let userAccuracyCircle = null;
+        let isFirstLocationFix = true;
+
+        // 1. Automatically fetch the folder contents from our Python server
+        fetch('/api/maps')
+            .then(response => response.json())
+            .then(async (mapCatalog) => {
+                let validPairsCount = 0;
+
+                for (let baseName in mapCatalog) {
+                    const mapFileName = mapCatalog[baseName].map;
+                    const jpgFileName = mapCatalog[baseName].jpg;
+
+                    const mapResponse = await fetch(mapFileName);
+                    const mapText = await mapResponse.text();
+                    const bounds = parseMapFile(mapText);
+
+                    if (bounds) {
+                        drawCoverageArea(baseName, jpgFileName, bounds);
+                        validPairsCount++;
+                    }
+                }
+
+                if (validPairsCount > 0) {
+                    document.getElementById('status').innerText = `Loaded ${validPairsCount} maps. Click an outline to view!`;
+                    map.fitBounds(coverageLayer.getBounds());
+                } else {
+                    document.getElementById('status').innerText = "No map pairs found in this folder.";
+                }
+            })
+            .catch(err => {
+                document.getElementById('status').innerText = "Error: Make sure the Python server is running!";
+                document.getElementById('status').style.color = "red";
+            });
+
+        // Helper to parse OziExplorer .map coordinates
+        function parseMapFile(text) {
+            const regex = /MMPLL,\s*\d+,\s*([\d.-]+),\s*([\d.-]+)/g;
+            let match;
+            let lats = [], lons = [];
+
+            while ((match = regex.exec(text)) !== null) {
+                lons.push(parseFloat(match[1]));
+                lats.push(parseFloat(match[2]));
+            }
+
+            if (lats.length < 2 || lons.length < 2) return null;
+
+            return [
+                [Math.min(...lats), Math.min(...lons)],
+                [Math.max(...lats), Math.max(...lons)]
+            ];
+        }
+
+        // Draw the clickable blue rectangles
+        function drawCoverageArea(baseName, jpgFileName, bounds) {
+            const rect = L.rectangle(bounds, {
+                color: "#2980b9", weight: 2, fillColor: "#3498db", fillOpacity: 0.1
+            });
+
+            rect.on('mouseover', function() { this.setStyle({ fillOpacity: 0.0 }); });
+            rect.on('mouseout', function() { this.setStyle({ fillOpacity: 0.1 }); });
+
+            rect.on('click', function() {
+                if (currentOverlay) map.removeLayer(currentOverlay);
+                document.getElementById('status').innerText = `Viewing: ${baseName}`;
+                
+                currentOverlay = L.imageOverlay(jpgFileName, bounds, {
+                    opacity: 0.85, interactive: true
+                }).addTo(map);
+            });
+
+            rect.bindTooltip(baseName, { sticky: true });
+            coverageLayer.addLayer(rect);
+        }
+
+        // ==========================================
+        // GPS FUNCTIONALITY
+        // ==========================================
+        function toggleGPS() {
+            const btn = document.getElementById('gpsBtn');
+
+            // If we are already tracking, turn it off
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                
+                if (userMarker) map.removeLayer(userMarker);
+                if (userAccuracyCircle) map.removeLayer(userAccuracyCircle);
+                
+                btn.innerText = "📍 Find My Location";
+                btn.style.backgroundColor = "#2ecc71";
+                isFirstLocationFix = true;
+                return;
+            }
+
+            // Check if browser supports Geolocation
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            btn.innerText = "🔄 Locating...";
+            btn.style.backgroundColor = "#e67e22";
+
+            // Options for mobile precision
+            const geoOptions = {
+                enableHighAccuracy: true, // Forces phone to turn on true hardware GPS hardware instead of cell towers
+                timeout: 10000,           // Give up after 10 seconds
+                maximumAge: 0             // Do not use a cached position
+            };
+
+            // Start live tracking position
+            watchId = navigator.geolocation.watchPosition(onLocationSuccess, onLocationError, geoOptions);
+        }
+
+        function onLocationSuccess(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const accuracy = position.coords.accuracy; // Precision in meters
+            const latlng = [lat, lon];
+
+            const btn = document.getElementById('gpsBtn');
+            btn.innerText = "🛑 Stop Tracking";
+            btn.style.backgroundColor = "#e74c3c";
+
+            // Update or create the marker pin
+            if (userMarker) {
+                userMarker.setLatLng(latlng);
+                userAccuracyCircle.setLatLng(latlng);
+                userAccuracyCircle.setRadius(accuracy);
+            } else {
+                // Main Location Pin
+                userMarker = L.marker(latlng).addTo(map)
+                    .bindPopup("You are here").openPopup();
+                
+                // Translucent circle around position indicating error radius
+                userAccuracyCircle = L.circle(latlng, {
+                    radius: accuracy,
+                    color: '#1abc9c',
+                    fillColor: '#1abc9c',
+                    fillOpacity: 0.15,
+                    weight: 1
+                }).addTo(map);
+            }
+
+            // Smoothly fly to the user's location on the initial lock
+            if (isFirstLocationFix) {
+                map.flyTo(latlng, 16);
+                isFirstLocationFix = false; 
+            }
+        }
+
+        function onLocationError(error) {
+            console.error(error);
+            let msg = "Unable to retrieve your location.";
+            if (error.code === 1) msg = "Permission denied. Please allow location access in your browser settings.";
+            else if (error.code === 2) msg = "Position unavailable. Ensure your device GPS is turned on.";
+            else if (error.code === 3) msg = "Location request timed out.";
+            
+            alert(msg);
+            toggleGPS(); // Reset UI state
+        }
+    </script>
+</body>
+</html>
