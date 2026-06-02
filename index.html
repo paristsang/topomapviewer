@@ -64,7 +64,7 @@
         let isFirstLocationFix = true;
 
         // 1. Automatically fetch the folder contents from our Python server
-        fetch('/api/maps')
+        fetch('maps.json')
             .then(response => response.json())
             .then(async (mapCatalog) => {
                 let validPairsCount = 0;
