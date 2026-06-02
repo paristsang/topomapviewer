@@ -4,23 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Auto-Loading Topo Viewer with GPS</title>
-    
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: sans-serif; }
-        #map { height: 100vh; width: 100vw; z-index: 1; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100vw;
+            z-index: 1;
+        }
+
         #ui-container {
-            position: absolute; top: 10px; left: 50px; z-index: 1000;
-            background: rgba(255, 255, 255, 0.95); padding: 15px;
-            border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            position: absolute;
+            top: 10px;
+            left: 50px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-        #status { font-weight: bold; color: #2980b9; font-size: 0.9em; }
-        
-        /* Modern Button Styling */
+
+        #status {
+            font-weight: bold;
+            color: #2980b9;
+            font-size: 0.9em;
+        }
+
         .gps-btn {
             background-color: #2ecc71;
             color: white;
@@ -32,8 +53,18 @@
             font-size: 0.9em;
             transition: background 0.2s ease;
         }
-        .gps-btn:hover { background-color: #27ae60; }
-        .gps-btn:active { background-color: #1e8449; }
+
+        .gps-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .gps-btn:active {
+            background-color: #1e8449;
+        }
+
+        .leaflet-control-layers {
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -50,13 +81,42 @@
 
     <script>
         const map = L.map('map').setView([0, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19, attribution: '© OpenStreetMap'
+
+        // ==========================================
+        // BASE MAP OPTIONS
+        // ==========================================
+
+        const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        });
+
+        const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team'
+        });
+
+        const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap'
+        });
+
+        const baseMaps = {
+            "OpenStreetMap Standard": osmStandard,
+            "OpenStreetMap HOT": osmHot,
+            "OpenStreetMap Outdoor / Topographic": openTopoMap
+        };
+
+        osmStandard.addTo(map);
+
+        L.control.layers(baseMaps, null, {
+            collapsed: false,
+            position: 'topright'
         }).addTo(map);
 
         let currentOverlay = null;
         let coverageLayer = L.featureGroup().addTo(map);
-        
+
         // GPS Global Variables
         let watchId = null;
         let userMarker = null;
@@ -91,6 +151,7 @@
                 }
             })
             .catch(err => {
+                console.error(err);
                 document.getElementById('status').innerText = "Error: Make sure the Python server is running!";
                 document.getElementById('status').style.color = "red";
             });
@@ -99,7 +160,8 @@
         function parseMapFile(text) {
             const regex = /MMPLL,\s*\d+,\s*([\d.-]+),\s*([\d.-]+)/g;
             let match;
-            let lats = [], lons = [];
+            let lats = [];
+            let lons = [];
 
             while ((match = regex.exec(text)) !== null) {
                 lons.push(parseFloat(match[1]));
@@ -117,18 +179,28 @@
         // Draw the clickable blue rectangles
         function drawCoverageArea(baseName, jpgFileName, bounds) {
             const rect = L.rectangle(bounds, {
-                color: "#2980b9", weight: 2, fillColor: "#3498db", fillOpacity: 0.1
+                color: "#2980b9",
+                weight: 2,
+                fillColor: "#3498db",
+                fillOpacity: 0.1
             });
 
-            rect.on('mouseover', function() { this.setStyle({ fillOpacity: 0.0 }); });
-            rect.on('mouseout', function() { this.setStyle({ fillOpacity: 0.1 }); });
+            rect.on('mouseover', function() {
+                this.setStyle({ fillOpacity: 0.0 });
+            });
+
+            rect.on('mouseout', function() {
+                this.setStyle({ fillOpacity: 0.1 });
+            });
 
             rect.on('click', function() {
                 if (currentOverlay) map.removeLayer(currentOverlay);
+
                 document.getElementById('status').innerText = `Viewing: ${baseName}`;
-                
+
                 currentOverlay = L.imageOverlay(jpgFileName, bounds, {
-                    opacity: 0.85, interactive: true
+                    opacity: 0.85,
+                    interactive: true
                 }).addTo(map);
             });
 
@@ -139,24 +211,30 @@
         // ==========================================
         // GPS FUNCTIONALITY
         // ==========================================
+
         function toggleGPS() {
             const btn = document.getElementById('gpsBtn');
 
-            // If we are already tracking, turn it off
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
-                
-                if (userMarker) map.removeLayer(userMarker);
-                if (userAccuracyCircle) map.removeLayer(userAccuracyCircle);
-                
+
+                if (userMarker) {
+                    map.removeLayer(userMarker);
+                    userMarker = null;
+                }
+
+                if (userAccuracyCircle) {
+                    map.removeLayer(userAccuracyCircle);
+                    userAccuracyCircle = null;
+                }
+
                 btn.innerText = "📍 Find My Location";
                 btn.style.backgroundColor = "#2ecc71";
                 isFirstLocationFix = true;
                 return;
             }
 
-            // Check if browser supports Geolocation
             if (!navigator.geolocation) {
                 alert("Geolocation is not supported by your browser.");
                 return;
@@ -165,38 +243,39 @@
             btn.innerText = "🔄 Locating...";
             btn.style.backgroundColor = "#e67e22";
 
-            // Options for mobile precision
             const geoOptions = {
-                enableHighAccuracy: true, // Forces phone to turn on true hardware GPS hardware instead of cell towers
-                timeout: 10000,           // Give up after 10 seconds
-                maximumAge: 0             // Do not use a cached position
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
             };
 
-            // Start live tracking position
-            watchId = navigator.geolocation.watchPosition(onLocationSuccess, onLocationError, geoOptions);
+            watchId = navigator.geolocation.watchPosition(
+                onLocationSuccess,
+                onLocationError,
+                geoOptions
+            );
         }
 
         function onLocationSuccess(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
-            const accuracy = position.coords.accuracy; // Precision in meters
+            const accuracy = position.coords.accuracy;
             const latlng = [lat, lon];
 
             const btn = document.getElementById('gpsBtn');
             btn.innerText = "🛑 Stop Tracking";
             btn.style.backgroundColor = "#e74c3c";
 
-            // Update or create the marker pin
             if (userMarker) {
                 userMarker.setLatLng(latlng);
                 userAccuracyCircle.setLatLng(latlng);
                 userAccuracyCircle.setRadius(accuracy);
             } else {
-                // Main Location Pin
-                userMarker = L.marker(latlng).addTo(map)
-                    .bindPopup("You are here").openPopup();
-                
-                // Translucent circle around position indicating error radius
+                userMarker = L.marker(latlng)
+                    .addTo(map)
+                    .bindPopup("You are here")
+                    .openPopup();
+
                 userAccuracyCircle = L.circle(latlng, {
                     radius: accuracy,
                     color: '#1abc9c',
@@ -206,22 +285,36 @@
                 }).addTo(map);
             }
 
-            // Smoothly fly to the user's location on the initial lock
             if (isFirstLocationFix) {
                 map.flyTo(latlng, 16);
-                isFirstLocationFix = false; 
+                isFirstLocationFix = false;
             }
         }
 
         function onLocationError(error) {
             console.error(error);
+
             let msg = "Unable to retrieve your location.";
-            if (error.code === 1) msg = "Permission denied. Please allow location access in your browser settings.";
-            else if (error.code === 2) msg = "Position unavailable. Ensure your device GPS is turned on.";
-            else if (error.code === 3) msg = "Location request timed out.";
-            
+
+            if (error.code === 1) {
+                msg = "Permission denied. Please allow location access in your browser settings.";
+            } else if (error.code === 2) {
+                msg = "Position unavailable. Ensure your device GPS is turned on.";
+            } else if (error.code === 3) {
+                msg = "Location request timed out.";
+            }
+
             alert(msg);
-            toggleGPS(); // Reset UI state
+
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+
+            const btn = document.getElementById('gpsBtn');
+            btn.innerText = "📍 Find My Location";
+            btn.style.backgroundColor = "#2ecc71";
+            isFirstLocationFix = true;
         }
     </script>
 </body>
