@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
-    <title>Mobile Topo Viewer with GPS and GPX Tracking</title>
+    <title>Mobile Topo Viewer with GPS and Local Map Catalog</title>
 
     <link
         rel="stylesheet"
@@ -33,43 +33,117 @@
             z-index: 1;
         }
 
-        #ui-container {
+        /* ================================
+           FLOATING TOOLS BUTTON
+        ================================= */
+
+        .tools-fab {
             position: absolute;
-            left: 50px;
-            top: 10px;
-            z-index: 1000;
-            width: 330px;
-            max-width: calc(100vw - 90px);
-            background: rgba(255, 255, 255, 0.96);
-            padding: 14px;
-            border-radius: 14px;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            backdrop-filter: blur(8px);
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            z-index: 1001;
+            border: none;
+            background: #2c3e50;
+            color: white;
+            padding: 13px 22px;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+            cursor: pointer;
+            touch-action: manipulation;
         }
 
-        #ui-container strong {
+        .tools-fab:active {
+            transform: translateX(-50%) scale(0.96);
+        }
+
+        .tools-backdrop {
+            position: absolute;
+            inset: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.22);
+            display: none;
+        }
+
+        .tools-backdrop.open {
+            display: block;
+        }
+
+        /* ================================
+           BOTTOM TOOLS SHEET
+        ================================= */
+
+        .tools-sheet {
+            position: absolute;
+            left: 50%;
+            bottom: 14px;
+            transform: translate(-50%, calc(100% + 30px));
+            z-index: 1002;
+            width: calc(100vw - 24px);
+            max-width: 430px;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 12px;
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.32);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition:
+                transform 0.24s ease,
+                opacity 0.24s ease;
+        }
+
+        .tools-sheet.open {
+            transform: translate(-50%, 0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .tools-sheet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .tools-sheet-header strong {
             font-size: 15px;
             color: #111;
+        }
+
+        .tools-close-btn {
+            border: none;
+            background: #eeeeee;
+            color: #333;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            font-size: 22px;
+            line-height: 28px;
+            cursor: pointer;
         }
 
         #status {
             font-weight: bold;
             color: #2980b9;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.35;
         }
 
         #gpsInfo {
-            font-size: 12px;
+            font-size: 11px;
             color: #444;
             line-height: 1.35;
             background: #f5f7f8;
             border-radius: 8px;
-            padding: 8px;
+            padding: 7px;
             display: none;
+            white-space: pre-line;
         }
 
         .button-grid {
@@ -85,15 +159,18 @@
         .app-btn {
             color: white;
             border: none;
-            padding: 10px 12px;
-            border-radius: 9px;
+            padding: 9px 8px;
+            border-radius: 11px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 13px;
-            transition: background 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+            font-size: 12px;
             width: 100%;
-            min-height: 42px;
+            min-height: 44px;
             touch-action: manipulation;
+            transition:
+                background 0.2s ease,
+                transform 0.1s ease,
+                opacity 0.2s ease;
         }
 
         .app-btn:active {
@@ -108,11 +185,7 @@
         .gps-btn {
             background-color: #2ecc71;
             font-size: 15px;
-            min-height: 46px;
-        }
-
-        .gps-btn:hover {
-            background-color: #27ae60;
+            min-height: 48px;
         }
 
         .follow-btn {
@@ -165,6 +238,10 @@
             font-weight: bold;
         }
 
+        /* ================================
+           LEAFLET CONTROLS
+        ================================= */
+
         .leaflet-control-layers {
             border-radius: 10px;
             box-shadow: 0 3px 14px rgba(0, 0, 0, 0.25);
@@ -177,21 +254,116 @@
             line-height: 36px;
         }
 
-        .leaflet-popup-content button {
-            background: #2980b9;
-            color: white;
-            border: none;
-            border-radius: 7px;
-            padding: 8px 10px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 8px;
+        .leaflet-bottom.leaflet-left {
+            bottom: 72px;
         }
 
-        .leaflet-popup-content button:hover {
-            background: #1f618d;
+        .leaflet-bottom.leaflet-right {
+            bottom: 72px;
         }
+
+        /* ================================
+           LOCAL MAP CATALOG CONTROL
+        ================================= */
+
+        .local-map-control {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 3px 14px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .local-map-toggle {
+            width: 38px;
+            height: 38px;
+            border: none;
+            background: #ffffff;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 38px;
+            text-align: center;
+        }
+
+        .local-map-panel {
+            display: none;
+            width: 280px;
+            max-height: 360px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .local-map-control.expanded .local-map-toggle {
+            display: none;
+        }
+
+        .local-map-control.expanded .local-map-panel {
+            display: block;
+        }
+
+        .local-map-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .local-map-close {
+            border: none;
+            background: #eeeeee;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            font-size: 16px;
+        }
+
+        .local-map-search {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #cccccc;
+            border-radius: 7px;
+            padding: 8px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .local-map-list {
+            max-height: 255px;
+            overflow-y: auto;
+            border-top: 1px solid #eeeeee;
+        }
+
+        .local-map-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 2px;
+            border-bottom: 1px solid #eeeeee;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1.25;
+        }
+
+        .local-map-item:hover {
+            background: #f5f7f8;
+        }
+
+        .local-map-item input {
+            flex: 0 0 auto;
+        }
+
+        .local-map-empty {
+            color: #777777;
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+        /* ================================
+           USER LOCATION MARKER
+        ================================= */
 
         .user-heading-marker {
             width: 32px;
@@ -220,44 +392,40 @@
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
         }
 
+        /* ================================
+           DESKTOP ADJUSTMENTS
+        ================================= */
+
+        @media (min-width: 701px) {
+            .tools-fab {
+                left: auto;
+                right: 20px;
+                bottom: 20px;
+                transform: none;
+            }
+
+            .tools-fab:active {
+                transform: scale(0.96);
+            }
+
+            .tools-sheet {
+                left: auto;
+                right: 20px;
+                bottom: 78px;
+                transform: translateY(20px);
+                width: 330px;
+            }
+
+            .tools-sheet.open {
+                transform: translateY(0);
+            }
+        }
+
+        /* ================================
+           MOBILE ADJUSTMENTS
+        ================================= */
+
         @media (max-width: 700px) {
-            #ui-container {
-                top: auto;
-                left: 50%;
-                bottom: 14px;
-                transform: translateX(-50%);
-                width: calc(100vw - 24px);
-                max-width: 430px;
-                padding: 12px;
-                border-radius: 18px;
-                gap: 8px;
-            }
-
-            #ui-container strong {
-                font-size: 14px;
-            }
-
-            #status {
-                font-size: 12px;
-            }
-
-            #gpsInfo {
-                font-size: 11px;
-                padding: 7px;
-            }
-
-            .app-btn {
-                min-height: 44px;
-                font-size: 12px;
-                border-radius: 11px;
-                padding: 9px 8px;
-            }
-
-            .gps-btn {
-                font-size: 15px;
-                min-height: 48px;
-            }
-
             .leaflet-top.leaflet-right {
                 top: 8px;
                 right: 8px;
@@ -273,20 +441,30 @@
                 margin-left: 8px;
             }
 
-            .leaflet-bottom.leaflet-left {
-                bottom: 170px;
+            .local-map-panel {
+                width: min(310px, calc(100vw - 70px));
+                max-height: 320px;
             }
 
-            .leaflet-bottom.leaflet-right {
-                bottom: 170px;
+            .local-map-list {
+                max-height: 220px;
             }
         }
     </style>
 </head>
 
 <body>
-    <div id="ui-container">
-        <div><strong>Local Map Catalog</strong></div>
+    <button id="toolsFab" class="tools-fab" type="button">
+        🧰 Tools
+    </button>
+
+    <div id="toolsBackdrop" class="tools-backdrop"></div>
+
+    <div id="ui-container" class="tools-sheet">
+        <div class="tools-sheet-header">
+            <strong>GPS & Field Tools</strong>
+            <button id="closeToolsBtn" class="tools-close-btn" type="button">×</button>
+        </div>
 
         <div id="status">Connecting to folder...</div>
 
@@ -339,6 +517,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
+        // ==========================================
+        // MAP INITIALIZATION
+        // ==========================================
+
         const map = L.map("map", {
             zoomControl: false
         }).setView([0, 0], 2);
@@ -352,6 +534,10 @@
             metric: true,
             position: "bottomleft"
         }).addTo(map);
+
+        // ==========================================
+        // BASE MAP OPTIONS
+        // ==========================================
 
         const osmStandard = L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -394,6 +580,22 @@
             position: "topright"
         }).addTo(map);
 
+        // ==========================================
+        // LOCAL MAP CATALOG CONTROL
+        // ==========================================
+
+        const localMapCatalogControl = createLocalMapCatalogControl();
+        localMapCatalogControl.addTo(map);
+
+        // ==========================================
+        // DOM ELEMENTS
+        // ==========================================
+
+        const toolsFab = document.getElementById("toolsFab");
+        const toolsSheet = document.getElementById("ui-container");
+        const toolsBackdrop = document.getElementById("toolsBackdrop");
+        const closeToolsBtn = document.getElementById("closeToolsBtn");
+
         const statusEl = document.getElementById("status");
         const gpsInfoEl = document.getElementById("gpsInfo");
         const gpsBtn = document.getElementById("gpsBtn");
@@ -406,32 +608,13 @@
         const opacitySlider = document.getElementById("opacitySlider");
         const opacityValue = document.getElementById("opacityValue");
 
-        let currentOverlay = null;
-        let currentOverlayName = "";
-        let currentOverlayBounds = null;
-        let currentOverlayVisible = true;
-        let currentOverlayOpacity = 0.85;
+        // ==========================================
+        // UI EVENTS
+        // ==========================================
 
-        const coverageLayer = L.featureGroup().addTo(map);
-        const mapEntries = [];
-
-        let watchId = null;
-        let userMarker = null;
-        let userAccuracyCircle = null;
-        let userPosition = null;
-        let userAccuracy = null;
-        let userHeading = null;
-        let userSpeed = null;
-        let isFirstLocationFix = true;
-        let isFollowingUser = false;
-
-        let isRecordingTrack = false;
-        let trackPoints = [];
-        let trackPolyline = L.polyline([], {
-            color: "#e74c3c",
-            weight: 4,
-            opacity: 0.9
-        }).addTo(map);
+        toolsFab.addEventListener("click", openToolsPanel);
+        closeToolsBtn.addEventListener("click", closeToolsPanel);
+        toolsBackdrop.addEventListener("click", closeToolsPanel);
 
         gpsBtn.addEventListener("click", toggleGPS);
         followBtn.addEventListener("click", toggleFollowMode);
@@ -458,7 +641,200 @@
 
         map.on("zoomend", updateCoverageStylesByZoom);
 
+        // ==========================================
+        // APP STATE
+        // ==========================================
+
+        let currentOverlay = null;
+        let currentOverlayName = "";
+        let currentOverlayBounds = null;
+        let currentOverlayVisible = true;
+        let currentOverlayOpacity = 0.85;
+
+        const coverageLayer = L.featureGroup().addTo(map);
+        const mapEntries = [];
+
+        let watchId = null;
+        let userMarker = null;
+        let userAccuracyCircle = null;
+        let userPosition = null;
+        let userAccuracy = null;
+        let userHeading = null;
+        let userSpeed = null;
+        let isFirstLocationFix = true;
+        let isFollowingUser = false;
+
+        let isRecordingTrack = false;
+        let trackPoints = [];
+
+        const trackPolyline = L.polyline([], {
+            color: "#e74c3c",
+            weight: 4,
+            opacity: 0.9
+        }).addTo(map);
+
         loadLocalMapCatalog();
+
+        // ==========================================
+        // TOOLS PANEL FUNCTIONS
+        // ==========================================
+
+        function openToolsPanel() {
+            toolsSheet.classList.add("open");
+            toolsBackdrop.classList.add("open");
+            toolsFab.style.display = "none";
+        }
+
+        function closeToolsPanel() {
+            toolsSheet.classList.remove("open");
+            toolsBackdrop.classList.remove("open");
+            toolsFab.style.display = "block";
+        }
+
+        // ==========================================
+        // LOCAL MAP CATALOG CONTROL FUNCTION
+        // ==========================================
+
+        function createLocalMapCatalogControl() {
+            const control = L.control({
+                position: "topright"
+            });
+
+            let container;
+            let searchInput;
+            let listContainer;
+            let entries = [];
+            let selectedName = "";
+
+            control.onAdd = function () {
+                container = L.DomUtil.create(
+                    "div",
+                    "leaflet-control local-map-control"
+                );
+
+                container.innerHTML = `
+                    <button class="local-map-toggle" type="button" title="Local Map Catalog">
+                        🗺
+                    </button>
+
+                    <div class="local-map-panel">
+                        <div class="local-map-header">
+                            <span>Local Map Catalog</span>
+                            <button class="local-map-close" type="button" title="Close">×</button>
+                        </div>
+
+                        <input
+                            class="local-map-search"
+                            type="search"
+                            placeholder="Search local maps..."
+                        />
+
+                        <div class="local-map-list">
+                            <div class="local-map-empty">Loading maps...</div>
+                        </div>
+                    </div>
+                `;
+
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
+
+                const toggleButton = container.querySelector(".local-map-toggle");
+                const closeButton = container.querySelector(".local-map-close");
+                searchInput = container.querySelector(".local-map-search");
+                listContainer = container.querySelector(".local-map-list");
+
+                toggleButton.addEventListener("click", function () {
+                    container.classList.add("expanded");
+                    searchInput.focus();
+                });
+
+                closeButton.addEventListener("click", function () {
+                    container.classList.remove("expanded");
+                });
+
+                searchInput.addEventListener("input", function () {
+                    renderList(searchInput.value);
+                });
+
+                return container;
+            };
+
+            control.setEntries = function (newEntries) {
+                entries = [...newEntries].sort((a, b) =>
+                    a.baseName.localeCompare(b.baseName)
+                );
+
+                renderList(searchInput ? searchInput.value : "");
+            };
+
+            control.setSelected = function (baseName) {
+                selectedName = baseName;
+                renderList(searchInput ? searchInput.value : "");
+            };
+
+            function renderList(filterText) {
+                if (!listContainer) {
+                    return;
+                }
+
+                const normalizedFilter = String(filterText || "").toLowerCase();
+
+                const filteredEntries = entries.filter((entry) =>
+                    entry.baseName.toLowerCase().includes(normalizedFilter)
+                );
+
+                if (filteredEntries.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="local-map-empty">
+                            No maps found.
+                        </div>
+                    `;
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+
+                filteredEntries.forEach((entry) => {
+                    const label = document.createElement("label");
+                    label.className = "local-map-item";
+
+                    const radio = document.createElement("input");
+                    radio.type = "radio";
+                    radio.name = "local-map-selection";
+                    radio.checked = entry.baseName === selectedName;
+
+                    const span = document.createElement("span");
+                    span.textContent = entry.baseName;
+
+                    label.appendChild(radio);
+                    label.appendChild(span);
+
+                    label.addEventListener("click", function () {
+                        openMapEntry(entry, {
+                            zoomToMap: true
+                        });
+
+                        selectedName = entry.baseName;
+                        renderList(searchInput.value);
+
+                        if (isMobile) {
+                            container.classList.remove("expanded");
+                        }
+                    });
+
+                    fragment.appendChild(label);
+                });
+
+                listContainer.innerHTML = "";
+                listContainer.appendChild(fragment);
+            }
+
+            return control;
+        }
+
+        // ==========================================
+        // LOAD LOCAL MAP CATALOG
+        // ==========================================
 
         async function loadLocalMapCatalog() {
             try {
@@ -474,6 +850,7 @@
 
                 if (entries.length === 0) {
                     updateStatus("No map entries found in maps.json.", "#e67e22");
+                    localMapCatalogControl.setEntries([]);
                     return;
                 }
 
@@ -513,9 +890,11 @@
                     }
                 }
 
+                localMapCatalogControl.setEntries(mapEntries);
+
                 if (validPairsCount > 0) {
                     updateStatus(
-                        `Loaded ${validPairsCount} maps. Tap an outline to open.`,
+                        `Loaded ${validPairsCount} maps. Choose one from 🗺 Local Map Catalog.`,
                         "#2980b9"
                     );
 
@@ -525,7 +904,10 @@
 
                     updateCoverageStylesByZoom();
                 } else {
-                    updateStatus("No valid map pairs found in this folder.", "#e67e22");
+                    updateStatus(
+                        "No valid map pairs found in this folder.",
+                        "#e67e22"
+                    );
                 }
             } catch (error) {
                 console.error(error);
@@ -536,13 +918,9 @@
             }
         }
 
-        function updateStatus(message, color) {
-            statusEl.innerText = message;
-
-            if (color) {
-                statusEl.style.color = color;
-            }
-        }
+        // ==========================================
+        // LOCAL MAP FUNCTIONS
+        // ==========================================
 
         function parseMapFile(text) {
             const regex = /MMPLL,\s*\d+,\s*([\d.-]+),\s*([\d.-]+)/g;
@@ -588,15 +966,9 @@
             mapEntries.push(entry);
 
             rect.on("click", function () {
-                const popupHtml = `
-                    <strong>${escapeHtml(baseName)}</strong>
-                    <br>
-                    <button type="button" onclick="openMapByName('${escapeJsString(baseName)}')">
-                        Open this map
-                    </button>
-                `;
-
-                rect.bindPopup(popupHtml).openPopup();
+                openMapEntry(entry, {
+                    zoomToMap: false
+                });
             });
 
             rect.bindTooltip(baseName, {
@@ -606,18 +978,9 @@
             coverageLayer.addLayer(rect);
         }
 
-        function openMapByName(baseName) {
-            const entry = mapEntries.find((item) => item.baseName === baseName);
+        function openMapEntry(entry, options = {}) {
+            const shouldZoomToMap = options.zoomToMap === true;
 
-            if (!entry) {
-                updateStatus(`Could not find map: ${baseName}`, "red");
-                return;
-            }
-
-            openMapEntry(entry);
-        }
-
-        function openMapEntry(entry) {
             if (currentOverlay) {
                 map.removeLayer(currentOverlay);
             }
@@ -638,7 +1001,13 @@
             overlayBtn.innerText = "🗺 Hide Map";
             opacityWrapper.style.display = "block";
 
-            map.closePopup();
+            localMapCatalogControl.setSelected(entry.baseName);
+
+            if (shouldZoomToMap) {
+                map.fitBounds(entry.bounds, {
+                    padding: [24, 24]
+                });
+            }
 
             updateStatus(`Viewing: ${entry.baseName}`, "#2980b9");
         }
@@ -686,6 +1055,10 @@
                 }
             });
         }
+
+        // ==========================================
+        // GPS FUNCTIONS
+        // ==========================================
 
         function toggleGPS() {
             if (watchId !== null) {
@@ -880,6 +1253,10 @@
             stopGPS();
         }
 
+        // ==========================================
+        // FOLLOW MODE
+        // ==========================================
+
         function toggleFollowMode() {
             setFollowMode(!isFollowingUser);
         }
@@ -899,6 +1276,10 @@
                 followBtn.innerText = "🧭 Follow: Off";
             }
         }
+
+        // ==========================================
+        // NEAREST LOCAL MAP
+        // ==========================================
 
         function openNearestMapToUser() {
             if (!userPosition) {
@@ -941,14 +1322,15 @@
                 return;
             }
 
-            openMapEntry(selectedEntry);
-
-            map.fitBounds(selectedEntry.bounds, {
-                padding: [24, 24]
+            openMapEntry(selectedEntry, {
+                zoomToMap: true
             });
 
             if (containingEntry) {
-                updateStatus(`Opened map containing your location: ${selectedEntry.baseName}`, "#2980b9");
+                updateStatus(
+                    `Opened map containing your location: ${selectedEntry.baseName}`,
+                    "#2980b9"
+                );
             } else {
                 updateStatus(
                     `Opened nearest map: ${selectedEntry.baseName} (${Math.round(nearestDistance)} m from center)`,
@@ -956,6 +1338,10 @@
                 );
             }
         }
+
+        // ==========================================
+        // TRACK RECORDING
+        // ==========================================
 
         function toggleTrackRecording() {
             if (isRecordingTrack) {
@@ -991,7 +1377,10 @@
             }
 
             updateGpsInfo();
-            updateStatus(`Track recording stopped. ${trackPoints.length} points saved.`, "#16a085");
+            updateStatus(
+                `Track recording stopped. ${trackPoints.length} points saved.`,
+                "#16a085"
+            );
         }
 
         function addTrackPoint(lat, lon, timestamp) {
@@ -1014,7 +1403,6 @@
             };
 
             trackPoints.push(point);
-
             trackPolyline.addLatLng([lat, lon]);
 
             exportBtn.disabled = trackPoints.length === 0;
@@ -1080,13 +1468,16 @@ ${trkpts}
 </gpx>`;
         }
 
-        function escapeHtml(value) {
-            return String(value)
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#039;");
+        // ==========================================
+        // HELPERS
+        // ==========================================
+
+        function updateStatus(message, color) {
+            statusEl.innerText = message;
+
+            if (color) {
+                statusEl.style.color = color;
+            }
         }
 
         function escapeXml(value) {
@@ -1097,16 +1488,6 @@ ${trkpts}
                 .replaceAll('"', "&quot;")
                 .replaceAll("'", "&apos;");
         }
-
-        function escapeJsString(value) {
-            return String(value)
-                .replaceAll("\\", "\\\\")
-                .replaceAll("'", "\\'")
-                .replaceAll("\n", "\\n")
-                .replaceAll("\r", "\\r");
-        }
-
-        window.openMapByName = openMapByName;
     </script>
 </body>
 </html>
