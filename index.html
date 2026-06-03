@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
-    <title>Auto-Loading Topo Viewer with GPS</title>
+    <title>Mobile Topo Viewer with GPS and GPX Tracking</title>
 
     <link
         rel="stylesheet"
@@ -24,6 +24,7 @@
             width: 100%;
             font-family: Arial, Helvetica, sans-serif;
             overflow: hidden;
+            background: #f4f4f4;
         }
 
         #map {
@@ -37,16 +38,16 @@
             left: 50px;
             top: 10px;
             z-index: 1000;
-            width: 300px;
+            width: 330px;
             max-width: calc(100vw - 90px);
             background: rgba(255, 255, 255, 0.96);
             padding: 14px;
-            border-radius: 12px;
+            border-radius: 14px;
             box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
             display: flex;
             flex-direction: column;
             gap: 10px;
-            backdrop-filter: blur(6px);
+            backdrop-filter: blur(8px);
         }
 
         #ui-container strong {
@@ -61,28 +62,107 @@
             line-height: 1.35;
         }
 
-        .gps-btn {
-            background-color: #2ecc71;
+        #gpsInfo {
+            font-size: 12px;
+            color: #444;
+            line-height: 1.35;
+            background: #f5f7f8;
+            border-radius: 8px;
+            padding: 8px;
+            display: none;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .app-btn {
             color: white;
             border: none;
-            padding: 11px 14px;
-            border-radius: 8px;
+            padding: 10px 12px;
+            border-radius: 9px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 15px;
-            transition: background 0.2s ease, transform 0.1s ease;
+            font-size: 13px;
+            transition: background 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
             width: 100%;
-            min-height: 44px;
+            min-height: 42px;
             touch-action: manipulation;
+        }
+
+        .app-btn:active {
+            transform: scale(0.98);
+        }
+
+        .app-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .gps-btn {
+            background-color: #2ecc71;
+            font-size: 15px;
+            min-height: 46px;
         }
 
         .gps-btn:hover {
             background-color: #27ae60;
         }
 
-        .gps-btn:active {
-            background-color: #1e8449;
-            transform: scale(0.98);
+        .follow-btn {
+            background-color: #3498db;
+        }
+
+        .follow-btn.active {
+            background-color: #1f618d;
+        }
+
+        .nearest-btn {
+            background-color: #8e44ad;
+        }
+
+        .overlay-btn {
+            background-color: #34495e;
+        }
+
+        .track-btn {
+            background-color: #e67e22;
+        }
+
+        .export-btn {
+            background-color: #16a085;
+        }
+
+        .opacity-wrapper {
+            display: none;
+            background: #f5f7f8;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .opacity-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #opacitySlider {
+            width: 100%;
+            accent-color: #2980b9;
+        }
+
+        #opacityValue {
+            min-width: 36px;
+            text-align: right;
+            font-weight: bold;
         }
 
         .leaflet-control-layers {
@@ -92,21 +172,65 @@
         }
 
         .leaflet-control-zoom a {
-            width: 34px;
-            height: 34px;
-            line-height: 34px;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+        }
+
+        .leaflet-popup-content button {
+            background: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            padding: 8px 10px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .leaflet-popup-content button:hover {
+            background: #1f618d;
+        }
+
+        .user-heading-marker {
+            width: 32px;
+            height: 32px;
+            transform-origin: center;
+        }
+
+        .user-heading-arrow {
+            width: 0;
+            height: 0;
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-bottom: 24px solid #e74c3c;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+            margin-left: 7px;
+        }
+
+        .user-heading-dot {
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border: 3px solid #e74c3c;
+            border-radius: 50%;
+            margin-left: 7px;
+            margin-top: -4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
         }
 
         @media (max-width: 700px) {
             #ui-container {
                 top: auto;
                 left: 50%;
-                bottom: 16px;
+                bottom: 14px;
                 transform: translateX(-50%);
-                width: calc(100vw - 28px);
-                max-width: 420px;
+                width: calc(100vw - 24px);
+                max-width: 430px;
                 padding: 12px;
-                border-radius: 16px;
+                border-radius: 18px;
+                gap: 8px;
             }
 
             #ui-container strong {
@@ -117,10 +241,21 @@
                 font-size: 12px;
             }
 
+            #gpsInfo {
+                font-size: 11px;
+                padding: 7px;
+            }
+
+            .app-btn {
+                min-height: 44px;
+                font-size: 12px;
+                border-radius: 11px;
+                padding: 9px 8px;
+            }
+
             .gps-btn {
                 font-size: 15px;
                 min-height: 48px;
-                border-radius: 12px;
             }
 
             .leaflet-top.leaflet-right {
@@ -137,6 +272,14 @@
                 margin-top: 8px;
                 margin-left: 8px;
             }
+
+            .leaflet-bottom.leaflet-left {
+                bottom: 170px;
+            }
+
+            .leaflet-bottom.leaflet-right {
+                bottom: 170px;
+            }
         }
     </style>
 </head>
@@ -144,10 +287,51 @@
 <body>
     <div id="ui-container">
         <div><strong>Local Map Catalog</strong></div>
+
         <div id="status">Connecting to folder...</div>
-        <button class="gps-btn" id="gpsBtn" type="button" onclick="toggleGPS()">
+
+        <div id="gpsInfo"></div>
+
+        <button class="app-btn gps-btn full-width" id="gpsBtn" type="button">
             📍 Find My Location
         </button>
+
+        <div class="button-grid">
+            <button class="app-btn follow-btn" id="followBtn" type="button" disabled>
+                🧭 Follow: Off
+            </button>
+
+            <button class="app-btn nearest-btn" id="nearestBtn" type="button" disabled>
+                📌 Nearest Map
+            </button>
+
+            <button class="app-btn overlay-btn" id="overlayBtn" type="button" disabled>
+                🗺 Hide Map
+            </button>
+
+            <button class="app-btn track-btn" id="trackBtn" type="button" disabled>
+                ▶ Start Track
+            </button>
+
+            <button class="app-btn export-btn full-width" id="exportBtn" type="button" disabled>
+                💾 Export GPX
+            </button>
+        </div>
+
+        <div class="opacity-wrapper" id="opacityWrapper">
+            <div class="opacity-row">
+                <span>Overlay</span>
+                <input
+                    id="opacitySlider"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="85"
+                    step="5"
+                />
+                <span id="opacityValue">85%</span>
+            </div>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -155,10 +339,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // ==========================================
-        // MAP INITIALIZATION
-        // ==========================================
-
         const map = L.map("map", {
             zoomControl: false
         }).setView([0, 0], 2);
@@ -167,9 +347,11 @@
             position: "topleft"
         }).addTo(map);
 
-        // ==========================================
-        // BASE MAP OPTIONS
-        // ==========================================
+        L.control.scale({
+            imperial: false,
+            metric: true,
+            position: "bottomleft"
+        }).addTo(map);
 
         const osmStandard = L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -212,44 +394,99 @@
             position: "topright"
         }).addTo(map);
 
-        // ==========================================
-        // LOCAL MAP CATALOG VARIABLES
-        // ==========================================
+        const statusEl = document.getElementById("status");
+        const gpsInfoEl = document.getElementById("gpsInfo");
+        const gpsBtn = document.getElementById("gpsBtn");
+        const followBtn = document.getElementById("followBtn");
+        const nearestBtn = document.getElementById("nearestBtn");
+        const overlayBtn = document.getElementById("overlayBtn");
+        const trackBtn = document.getElementById("trackBtn");
+        const exportBtn = document.getElementById("exportBtn");
+        const opacityWrapper = document.getElementById("opacityWrapper");
+        const opacitySlider = document.getElementById("opacitySlider");
+        const opacityValue = document.getElementById("opacityValue");
 
         let currentOverlay = null;
-        const coverageLayer = L.featureGroup().addTo(map);
+        let currentOverlayName = "";
+        let currentOverlayBounds = null;
+        let currentOverlayVisible = true;
+        let currentOverlayOpacity = 0.85;
 
-        // ==========================================
-        // GPS VARIABLES
-        // ==========================================
+        const coverageLayer = L.featureGroup().addTo(map);
+        const mapEntries = [];
 
         let watchId = null;
         let userMarker = null;
         let userAccuracyCircle = null;
+        let userPosition = null;
+        let userAccuracy = null;
+        let userHeading = null;
+        let userSpeed = null;
         let isFirstLocationFix = true;
+        let isFollowingUser = false;
 
-        // ==========================================
-        // LOAD LOCAL MAP CATALOG
-        // ==========================================
+        let isRecordingTrack = false;
+        let trackPoints = [];
+        let trackPolyline = L.polyline([], {
+            color: "#e74c3c",
+            weight: 4,
+            opacity: 0.9
+        }).addTo(map);
 
-        fetch("maps.json")
-            .then((response) => {
+        gpsBtn.addEventListener("click", toggleGPS);
+        followBtn.addEventListener("click", toggleFollowMode);
+        nearestBtn.addEventListener("click", openNearestMapToUser);
+        overlayBtn.addEventListener("click", toggleCurrentOverlayVisibility);
+        trackBtn.addEventListener("click", toggleTrackRecording);
+        exportBtn.addEventListener("click", exportGPX);
+
+        opacitySlider.addEventListener("input", function () {
+            const value = Number(opacitySlider.value);
+            currentOverlayOpacity = value / 100;
+            opacityValue.innerText = `${value}%`;
+
+            if (currentOverlay) {
+                currentOverlay.setOpacity(currentOverlayOpacity);
+            }
+        });
+
+        map.on("dragstart", function () {
+            if (isFollowingUser) {
+                setFollowMode(false);
+            }
+        });
+
+        map.on("zoomend", updateCoverageStylesByZoom);
+
+        loadLocalMapCatalog();
+
+        async function loadLocalMapCatalog() {
+            try {
+                const response = await fetch("maps.json");
+
                 if (!response.ok) {
                     throw new Error("Could not load maps.json");
                 }
 
-                return response.json();
-            })
-            .then(async (mapCatalog) => {
+                const mapCatalog = await response.json();
+                const entries = Object.entries(mapCatalog);
                 let validPairsCount = 0;
 
-                for (const baseName in mapCatalog) {
-                    if (!Object.prototype.hasOwnProperty.call(mapCatalog, baseName)) {
-                        continue;
-                    }
+                if (entries.length === 0) {
+                    updateStatus("No map entries found in maps.json.", "#e67e22");
+                    return;
+                }
 
-                    const mapFileName = mapCatalog[baseName].map;
-                    const jpgFileName = mapCatalog[baseName].jpg;
+                for (let index = 0; index < entries.length; index++) {
+                    const [baseName, entry] = entries[index];
+
+                    updateStatus(
+                        `Loading maps: ${index + 1} / ${entries.length}`,
+                        "#2980b9"
+                    );
+
+                    const mapFileName = entry.map;
+                    const jpgFileName = entry.jpg;
 
                     if (!mapFileName || !jpgFileName) {
                         console.warn("Skipping invalid catalog entry:", baseName);
@@ -278,35 +515,32 @@
 
                 if (validPairsCount > 0) {
                     updateStatus(
-                        `Loaded ${validPairsCount} maps. Click an outline to view!`,
+                        `Loaded ${validPairsCount} maps. Tap an outline to open.`,
                         "#2980b9"
                     );
 
                     map.fitBounds(coverageLayer.getBounds(), {
-                        padding: [20, 20]
+                        padding: [24, 24]
                     });
+
+                    updateCoverageStylesByZoom();
                 } else {
-                    updateStatus("No map pairs found in this folder.", "#e67e22");
+                    updateStatus("No valid map pairs found in this folder.", "#e67e22");
                 }
-            })
-            .catch((error) => {
+            } catch (error) {
                 console.error(error);
                 updateStatus(
                     "Error: Make sure the Python server is running!",
                     "red"
                 );
-            });
-
-        // ==========================================
-        // HELPERS
-        // ==========================================
+            }
+        }
 
         function updateStatus(message, color) {
-            const status = document.getElementById("status");
-            status.innerText = message;
+            statusEl.innerText = message;
 
             if (color) {
-                status.style.color = color;
+                statusEl.style.color = color;
             }
         }
 
@@ -317,8 +551,13 @@
             const lons = [];
 
             while ((match = regex.exec(text)) !== null) {
-                lons.push(parseFloat(match[1]));
-                lats.push(parseFloat(match[2]));
+                const lon = Number.parseFloat(match[1]);
+                const lat = Number.parseFloat(match[2]);
+
+                if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                    lons.push(lon);
+                    lats.push(lat);
+                }
             }
 
             if (lats.length < 2 || lons.length < 2) {
@@ -336,35 +575,28 @@
                 color: "#2980b9",
                 weight: 2,
                 fillColor: "#3498db",
-                fillOpacity: 0.1
+                fillOpacity: 0.08
             });
 
-            rect.on("mouseover", function () {
-                this.setStyle({
-                    fillOpacity: 0
-                });
-            });
+            const entry = {
+                baseName,
+                jpgFileName,
+                bounds,
+                rect
+            };
 
-            rect.on("mouseout", function () {
-                this.setStyle({
-                    fillOpacity: 0.1
-                });
-            });
+            mapEntries.push(entry);
 
             rect.on("click", function () {
-                if (currentOverlay) {
-                    map.removeLayer(currentOverlay);
-                }
+                const popupHtml = `
+                    <strong>${escapeHtml(baseName)}</strong>
+                    <br>
+                    <button type="button" onclick="openMapByName('${escapeJsString(baseName)}')">
+                        Open this map
+                    </button>
+                `;
 
-                updateStatus(`Viewing: ${baseName}`, "#2980b9");
-
-                currentOverlay = L.imageOverlay(jpgFileName, bounds, {
-                    opacity: 0.85,
-                    interactive: true
-                }).addTo(map);
-
-                currentOverlay.bringToFront();
-                rect.bringToFront();
+                rect.bindPopup(popupHtml).openPopup();
             });
 
             rect.bindTooltip(baseName, {
@@ -374,13 +606,88 @@
             coverageLayer.addLayer(rect);
         }
 
-        // ==========================================
-        // GPS FUNCTIONALITY
-        // ==========================================
+        function openMapByName(baseName) {
+            const entry = mapEntries.find((item) => item.baseName === baseName);
+
+            if (!entry) {
+                updateStatus(`Could not find map: ${baseName}`, "red");
+                return;
+            }
+
+            openMapEntry(entry);
+        }
+
+        function openMapEntry(entry) {
+            if (currentOverlay) {
+                map.removeLayer(currentOverlay);
+            }
+
+            currentOverlayName = entry.baseName;
+            currentOverlayBounds = entry.bounds;
+            currentOverlayVisible = true;
+
+            currentOverlay = L.imageOverlay(entry.jpgFileName, entry.bounds, {
+                opacity: currentOverlayOpacity,
+                interactive: true
+            }).addTo(map);
+
+            currentOverlay.bringToFront();
+            entry.rect.bringToFront();
+
+            overlayBtn.disabled = false;
+            overlayBtn.innerText = "🗺 Hide Map";
+            opacityWrapper.style.display = "block";
+
+            map.closePopup();
+
+            updateStatus(`Viewing: ${entry.baseName}`, "#2980b9");
+        }
+
+        function toggleCurrentOverlayVisibility() {
+            if (!currentOverlay || !currentOverlayBounds || !currentOverlayName) {
+                return;
+            }
+
+            if (currentOverlayVisible) {
+                map.removeLayer(currentOverlay);
+                currentOverlayVisible = false;
+                overlayBtn.innerText = "🗺 Show Map";
+                updateStatus(`Hidden: ${currentOverlayName}`, "#34495e");
+            } else {
+                currentOverlay.addTo(map);
+                currentOverlay.setOpacity(currentOverlayOpacity);
+                currentOverlay.bringToFront();
+                currentOverlayVisible = true;
+                overlayBtn.innerText = "🗺 Hide Map";
+                updateStatus(`Viewing: ${currentOverlayName}`, "#2980b9");
+            }
+        }
+
+        function updateCoverageStylesByZoom() {
+            const zoom = map.getZoom();
+
+            let weight = 1;
+            let fillOpacity = 0.03;
+
+            if (zoom >= 9 && zoom < 12) {
+                weight = 1.5;
+                fillOpacity = 0.06;
+            } else if (zoom >= 12) {
+                weight = 2;
+                fillOpacity = 0.1;
+            }
+
+            coverageLayer.eachLayer((layer) => {
+                if (layer.setStyle) {
+                    layer.setStyle({
+                        weight,
+                        fillOpacity
+                    });
+                }
+            });
+        }
 
         function toggleGPS() {
-            const btn = document.getElementById("gpsBtn");
-
             if (watchId !== null) {
                 stopGPS();
                 return;
@@ -391,8 +698,8 @@
                 return;
             }
 
-            btn.innerText = "🔄 Locating...";
-            btn.style.backgroundColor = "#e67e22";
+            gpsBtn.innerText = "🔄 Locating...";
+            gpsBtn.style.backgroundColor = "#e67e22";
 
             const geoOptions = {
                 enableHighAccuracy: true,
@@ -408,8 +715,6 @@
         }
 
         function stopGPS() {
-            const btn = document.getElementById("gpsBtn");
-
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
@@ -425,33 +730,100 @@
                 userAccuracyCircle = null;
             }
 
-            btn.innerText = "📍 Find My Location";
-            btn.style.backgroundColor = "#2ecc71";
+            userPosition = null;
+            userAccuracy = null;
+            userHeading = null;
+            userSpeed = null;
             isFirstLocationFix = true;
+
+            setFollowMode(false);
+
+            gpsBtn.innerText = "📍 Find My Location";
+            gpsBtn.style.backgroundColor = "#2ecc71";
+
+            followBtn.disabled = true;
+            nearestBtn.disabled = true;
+            trackBtn.disabled = true;
+
+            gpsInfoEl.style.display = "none";
+            gpsInfoEl.innerText = "";
+
+            if (isRecordingTrack) {
+                stopTrackRecording();
+            }
         }
 
         function onLocationSuccess(position) {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
             const accuracy = position.coords.accuracy;
+            const heading = position.coords.heading;
+            const speed = position.coords.speed;
+            const timestamp = position.timestamp;
             const latlng = [lat, lon];
 
-            const btn = document.getElementById("gpsBtn");
-            btn.innerText = "🛑 Stop Tracking";
-            btn.style.backgroundColor = "#e74c3c";
+            userPosition = {
+                lat,
+                lon,
+                timestamp
+            };
+
+            userAccuracy = Number.isFinite(accuracy) ? accuracy : null;
+            userHeading = Number.isFinite(heading) ? heading : null;
+            userSpeed = Number.isFinite(speed) ? speed : null;
+
+            gpsBtn.innerText = "🛑 Stop Tracking";
+            gpsBtn.style.backgroundColor = "#e74c3c";
+
+            followBtn.disabled = false;
+            nearestBtn.disabled = false;
+            trackBtn.disabled = false;
+
+            updateUserLocationMarker(latlng, accuracy, heading);
+            updateGpsInfo();
+
+            if (isRecordingTrack) {
+                addTrackPoint(lat, lon, timestamp);
+            }
+
+            if (isFirstLocationFix) {
+                map.flyTo(latlng, 16);
+                isFirstLocationFix = false;
+            } else if (isFollowingUser) {
+                map.panTo(latlng, {
+                    animate: true,
+                    duration: 0.5
+                });
+            }
+        }
+
+        function updateUserLocationMarker(latlng, accuracy, heading) {
+            const headingDegrees = Number.isFinite(heading) ? heading : 0;
+
+            const icon = L.divIcon({
+                className: "",
+                html: `
+                    <div class="user-heading-marker" style="transform: rotate(${headingDegrees}deg);">
+                        <div class="user-heading-arrow"></div>
+                        <div class="user-heading-dot"></div>
+                    </div>
+                `,
+                iconSize: [32, 32],
+                iconAnchor: [16, 20]
+            });
 
             if (userMarker && userAccuracyCircle) {
                 userMarker.setLatLng(latlng);
+                userMarker.setIcon(icon);
                 userAccuracyCircle.setLatLng(latlng);
-                userAccuracyCircle.setRadius(accuracy);
+                userAccuracyCircle.setRadius(Number.isFinite(accuracy) ? accuracy : 0);
             } else {
-                userMarker = L.marker(latlng)
-                    .addTo(map)
-                    .bindPopup("You are here")
-                    .openPopup();
+                userMarker = L.marker(latlng, {
+                    icon
+                }).addTo(map).bindPopup("You are here");
 
                 userAccuracyCircle = L.circle(latlng, {
-                    radius: accuracy,
+                    radius: Number.isFinite(accuracy) ? accuracy : 0,
                     color: "#1abc9c",
                     fillColor: "#1abc9c",
                     fillOpacity: 0.15,
@@ -461,11 +833,34 @@
 
             userMarker.setZIndexOffset(1000);
             userAccuracyCircle.bringToFront();
+        }
 
-            if (isFirstLocationFix) {
-                map.flyTo(latlng, 16);
-                isFirstLocationFix = false;
+        function updateGpsInfo() {
+            if (!userPosition) {
+                gpsInfoEl.style.display = "none";
+                gpsInfoEl.innerText = "";
+                return;
             }
+
+            const accuracyText = userAccuracy !== null
+                ? `±${Math.round(userAccuracy)} m`
+                : "unknown";
+
+            const headingText = userHeading !== null
+                ? `${Math.round(userHeading)}°`
+                : "unknown";
+
+            const speedText = userSpeed !== null
+                ? `${(userSpeed * 3.6).toFixed(1)} km/h`
+                : "unknown";
+
+            const trackText = isRecordingTrack
+                ? `Recording: ${trackPoints.length} points`
+                : `Track points: ${trackPoints.length}`;
+
+            gpsInfoEl.style.display = "block";
+            gpsInfoEl.innerText =
+                `GPS accuracy: ${accuracyText} | Heading: ${headingText} | Speed: ${speedText}\n${trackText}`;
         }
 
         function onLocationError(error) {
@@ -474,11 +869,9 @@
             let msg = "Unable to retrieve your location.";
 
             if (error.code === 1) {
-                msg =
-                    "Permission denied. Please allow location access in your browser settings.";
+                msg = "Permission denied. Please allow location access in your browser settings.";
             } else if (error.code === 2) {
-                msg =
-                    "Position unavailable. Ensure your device GPS is turned on.";
+                msg = "Position unavailable. Ensure your device GPS is turned on.";
             } else if (error.code === 3) {
                 msg = "Location request timed out.";
             }
@@ -486,6 +879,234 @@
             alert(msg);
             stopGPS();
         }
+
+        function toggleFollowMode() {
+            setFollowMode(!isFollowingUser);
+        }
+
+        function setFollowMode(enabled) {
+            isFollowingUser = enabled;
+
+            if (enabled) {
+                followBtn.classList.add("active");
+                followBtn.innerText = "🧭 Follow: On";
+
+                if (userPosition) {
+                    map.panTo([userPosition.lat, userPosition.lon]);
+                }
+            } else {
+                followBtn.classList.remove("active");
+                followBtn.innerText = "🧭 Follow: Off";
+            }
+        }
+
+        function openNearestMapToUser() {
+            if (!userPosition) {
+                alert("Start GPS first so the app knows your location.");
+                return;
+            }
+
+            if (mapEntries.length === 0) {
+                alert("No local maps are loaded yet.");
+                return;
+            }
+
+            const userLatLng = L.latLng(userPosition.lat, userPosition.lon);
+
+            let containingEntry = null;
+            let nearestEntry = null;
+            let nearestDistance = Infinity;
+
+            for (const entry of mapEntries) {
+                const bounds = L.latLngBounds(entry.bounds);
+
+                if (bounds.contains(userLatLng)) {
+                    containingEntry = entry;
+                    break;
+                }
+
+                const center = bounds.getCenter();
+                const distance = userLatLng.distanceTo(center);
+
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestEntry = entry;
+                }
+            }
+
+            const selectedEntry = containingEntry || nearestEntry;
+
+            if (!selectedEntry) {
+                alert("Could not determine the nearest map.");
+                return;
+            }
+
+            openMapEntry(selectedEntry);
+
+            map.fitBounds(selectedEntry.bounds, {
+                padding: [24, 24]
+            });
+
+            if (containingEntry) {
+                updateStatus(`Opened map containing your location: ${selectedEntry.baseName}`, "#2980b9");
+            } else {
+                updateStatus(
+                    `Opened nearest map: ${selectedEntry.baseName} (${Math.round(nearestDistance)} m from center)`,
+                    "#2980b9"
+                );
+            }
+        }
+
+        function toggleTrackRecording() {
+            if (isRecordingTrack) {
+                stopTrackRecording();
+            } else {
+                startTrackRecording();
+            }
+        }
+
+        function startTrackRecording() {
+            if (!userPosition) {
+                alert("Start GPS first before recording a track.");
+                return;
+            }
+
+            isRecordingTrack = true;
+            trackBtn.innerText = "⏹ Stop Track";
+            trackBtn.style.backgroundColor = "#c0392b";
+
+            addTrackPoint(userPosition.lat, userPosition.lon, userPosition.timestamp);
+
+            updateGpsInfo();
+            updateStatus("Track recording started.", "#e67e22");
+        }
+
+        function stopTrackRecording() {
+            isRecordingTrack = false;
+            trackBtn.innerText = "▶ Start Track";
+            trackBtn.style.backgroundColor = "#e67e22";
+
+            if (trackPoints.length > 0) {
+                exportBtn.disabled = false;
+            }
+
+            updateGpsInfo();
+            updateStatus(`Track recording stopped. ${trackPoints.length} points saved.`, "#16a085");
+        }
+
+        function addTrackPoint(lat, lon, timestamp) {
+            const lastPoint = trackPoints[trackPoints.length - 1];
+
+            if (lastPoint) {
+                const lastLatLng = L.latLng(lastPoint.lat, lastPoint.lon);
+                const currentLatLng = L.latLng(lat, lon);
+                const distance = lastLatLng.distanceTo(currentLatLng);
+
+                if (distance < 2) {
+                    return;
+                }
+            }
+
+            const point = {
+                lat,
+                lon,
+                time: new Date(timestamp || Date.now()).toISOString()
+            };
+
+            trackPoints.push(point);
+
+            trackPolyline.addLatLng([lat, lon]);
+
+            exportBtn.disabled = trackPoints.length === 0;
+            updateGpsInfo();
+        }
+
+        function exportGPX() {
+            if (trackPoints.length === 0) {
+                alert("No track points to export.");
+                return;
+            }
+
+            const gpx = buildGPX(trackPoints);
+            const blob = new Blob([gpx], {
+                type: "application/gpx+xml;charset=utf-8"
+            });
+
+            const timestamp = new Date()
+                .toISOString()
+                .replaceAll(":", "-")
+                .replaceAll(".", "-");
+
+            const fileName = `gps-track-${timestamp}.gpx`;
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            updateStatus(`Exported GPX: ${fileName}`, "#16a085");
+        }
+
+        function buildGPX(points) {
+            const trackName = `GPS Track ${new Date().toISOString()}`;
+
+            const trkpts = points.map((point) => {
+                return `      <trkpt lat="${point.lat}" lon="${point.lon}">
+        <time>${point.time}</time>
+      </trkpt>`;
+            }).join("\n");
+
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1"
+     creator="Mobile Topo Viewer"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>${escapeXml(trackName)}</name>
+    <time>${new Date().toISOString()}</time>
+  </metadata>
+  <trk>
+    <name>${escapeXml(trackName)}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>`;
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function escapeXml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&apos;");
+        }
+
+        function escapeJsString(value) {
+            return String(value)
+                .replaceAll("\\", "\\\\")
+                .replaceAll("'", "\\'")
+                .replaceAll("\n", "\\n")
+                .replaceAll("\r", "\\r");
+        }
+
+        window.openMapByName = openMapByName;
     </script>
 </body>
 </html>
